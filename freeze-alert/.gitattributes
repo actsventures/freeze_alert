@@ -1,0 +1,18 @@
+# Prevent accidental commits of sensitive files
+.dev.vars filter=git-crypt diff=git-crypt
+*.env filter=git-crypt diff=git-crypt
+*.secret filter=git-crypt diff=git-crypt
+*.key filter=git-crypt diff=git-crypt
+
+# Ensure line endings are consistent
+* text=auto eol=lf
+*.sh text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+

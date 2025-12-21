@@ -31,7 +31,6 @@ interface NWSForecastResponse {
     periods: Array<{
       name: string;
       temperature: number;
-      temperatureUnit: string;
       isDaytime: boolean;
     }>;
   };
@@ -125,11 +124,9 @@ export async function fetchNWSForecast(zipCode: string): Promise<NWSForecast> {
     throw new WeatherError('Could not find overnight forecast period');
   }
 
-  // Convert to Fahrenheit if needed
-  let tempF = overnightPeriod.temperature;
-  if (overnightPeriod.temperatureUnit === 'C') {
-    tempF = Math.round(tempF * 9/5 + 32);
-  }
+  // NWS (US National Weather Service) always returns Fahrenheit
+  // Round to avoid decimal precision issues in alerts
+  const tempF = Math.round(overnightPeriod.temperature);
 
   return { overnightLow: tempF };
 }
