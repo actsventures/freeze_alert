@@ -1,0 +1,13 @@
+# Twilio credentials - https://console.twilio.com
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=your_auth_token_here
+TWILIO_PHONE_NUMBER=+15125551234
+
+# Stripe credentials - https://dashboard.stripe.com/apikeys
+STRIPE_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+STRIPE_WEBHOOK_SECRET=whsec_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+STRIPE_PRICE_ID=price_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Alert email for failure notifications
+ALERT_EMAIL=alerts@example.com
+

@@ -1,0 +1,22 @@
+{
+  "name": "freeze-alert",
+  "version": "1.0.0",
+  "description": "SMS alerts when temperatures drop low enough to drip faucets",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute freeze-alert-db --file=./schema.sql",
+    "db:migrate:local": "wrangler d1 execute freeze-alert-db --local --file=./schema.sql",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20241127.0",
+    "typescript": "^5.7.2",
+    "wrangler": "^3.95.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
+
