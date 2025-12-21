@@ -3,7 +3,7 @@ import { fetchNWSForecast, WeatherError } from '../services/weather';
 
 // Mock the global fetch function
 const mockFetch = vi.fn();
-global.fetch = mockFetch;
+globalThis.fetch = mockFetch as any;
 
 describe('NWS Weather Service (No Credentials Needed!)', () => {
   beforeEach(() => {
