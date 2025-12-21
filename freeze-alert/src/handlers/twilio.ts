@@ -156,7 +156,10 @@ export async function handleTwilioWebhook(
         console.error('Failed to send payment link SMS:', err);
         // Don't return error to Twilio - payment link was created successfully
         // User can retry by texting again
+        // Return success since checkout URL was created (SMS failure is non-fatal)
+        return new Response('', { status: 200 });
       }
+      // Re-throw non-SMS errors for outer catch handler
       throw err;
     }
 

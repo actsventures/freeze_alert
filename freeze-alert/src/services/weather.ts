@@ -107,13 +107,19 @@ export async function fetchNWSForecast(zipCode: string): Promise<NWSForecast> {
   const forecastData = await forecastResponse.json() as NWSForecastResponse;
 
   // Step 3: Find the overnight low
-  // Look for periods named "Tonight", "Overnight", or the first non-daytime period
+  // Prioritize periods named "Tonight" or "Overnight", then fall back to first non-daytime period
   const periods = forecastData.properties.periods;
-  const overnightPeriod = periods.find(
-    p => !p.isDaytime ||
-         p.name.toLowerCase().includes('tonight') ||
+
+  // First, try to find a period with "tonight" or "overnight" in the name
+  let overnightPeriod = periods.find(
+    p => p.name.toLowerCase().includes('tonight') ||
          p.name.toLowerCase().includes('overnight')
   );
+
+  // If not found, fall back to the first non-daytime period
+  if (!overnightPeriod) {
+    overnightPeriod = periods.find(p => !p.isDaytime);
+  }
 
   if (!overnightPeriod) {
     throw new WeatherError('Could not find overnight forecast period');
