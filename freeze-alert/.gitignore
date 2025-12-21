@@ -1,0 +1,58 @@
+# Dependencies
+node_modules/
+
+# Wrangler
+.wrangler/
+.dev.vars
+.dev.vars.*
+*.dev.vars
+
+# Secrets and environment files
+.env
+.env.*
+*.env
+*.secret
+*.key
+*.pem
+secrets/
+.secrets/
+
+# Build output
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local D1 database
+.mf/
+
+# Temporary files
+temp_*
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
