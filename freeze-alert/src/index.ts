@@ -114,7 +114,7 @@ async function handleScheduled(
     for (let i = 0; i < uniqueZips.length; i += batchSize) {
       const batch = uniqueZips.slice(i, i + batchSize);
 
-      const results = await Promise.allSettled(
+      await Promise.allSettled(
         batch.map(async (zipCode) => {
           try {
             // Fetch weather forecast
@@ -159,12 +159,6 @@ async function handleScheduled(
           }
         })
       );
-
-      // Log batch results
-      const batchFailed = results.filter((r) => r.status === 'rejected').length;
-      if (batchFailed > 0) {
-        console.warn(`Batch ${i / batchSize + 1} had ${batchFailed} failure(s)`);
-      }
     }
 
     console.log(`Cron completed: ${sentCount} alert(s) sent, ${failedCount} failure(s)`);

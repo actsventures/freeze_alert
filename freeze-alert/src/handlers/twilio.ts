@@ -6,23 +6,78 @@ import { createCheckoutSession, PaymentError } from '../services/payments';
 import { sendPaymentLink, sendSMS, SMSError } from '../services/sms';
 
 /**
- * Verify Twilio webhook signature
+ * Twilio signature verification error
+ */
+export class TwilioSignatureError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'TwilioSignatureError';
+  }
+}
+
+/**
+ * Verify Twilio webhook signature using HMAC-SHA1
+ *
+ * Twilio signs webhooks by:
+ * 1. Taking the full request URL
+ * 2. Sorting POST parameters alphabetically
+ * 3. Appending each param name+value to the URL
+ * 4. Computing HMAC-SHA1 with auth token as key
+ * 5. Base64 encoding the result
  *
  * @param signature - X-Twilio-Signature header value
- * @returns True if signature format is valid
- *
- * Note: Full HMAC-SHA1 verification requires a library not available in Workers runtime.
- * Phase 1: Basic format validation. Phase 2+: Implement full verification.
+ * @param url - Full request URL (including scheme, host, path)
+ * @param params - POST body parameters as key-value pairs
+ * @param authToken - Twilio Auth Token
+ * @throws {TwilioSignatureError} If signature verification fails
  */
-function verifyTwilioSignature(signature: string): boolean {
-  // Basic validation: check signature format (base64, ~28 chars)
-  if (signature.length < 20 || signature.length > 50) {
-    return false;
+async function verifyTwilioSignature(
+  signature: string,
+  url: string,
+  params: Record<string, string>,
+  authToken: string
+): Promise<void> {
+  // Build the string to sign: URL + sorted params
+  const sortedKeys = Object.keys(params).sort();
+  let dataToSign = url;
+  for (const key of sortedKeys) {
+    dataToSign += key + params[key];
   }
 
-  // Phase 1: Accept signature presence and format as basic validation
-  // Full HMAC-SHA1 verification requires a library not available in Workers runtime
-  return true;
+  // Compute HMAC-SHA1
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(authToken),
+    { name: 'HMAC', hash: 'SHA-1' },
+    false,
+    ['sign']
+  );
+
+  const signatureBuffer = await crypto.subtle.sign(
+    'HMAC',
+    key,
+    encoder.encode(dataToSign)
+  );
+
+  // Base64 encode the signature
+  const computedSignature = btoa(
+    String.fromCharCode(...new Uint8Array(signatureBuffer))
+  );
+
+  // Constant-time comparison to prevent timing attacks
+  const expectedBytes = encoder.encode(signature);
+  const computedBytes = encoder.encode(computedSignature);
+
+  let mismatch = expectedBytes.length ^ computedBytes.length;
+  const minLength = Math.min(expectedBytes.length, computedBytes.length);
+  for (let i = 0; i < minLength; i++) {
+    mismatch |= expectedBytes[i] ^ computedBytes[i];
+  }
+
+  if (mismatch !== 0) {
+    throw new TwilioSignatureError('Twilio signature verification failed');
+  }
 }
 
 /**
@@ -42,29 +97,45 @@ export async function handleTwilioWebhook(
   env: Env
 ): Promise<Response> {
   try {
-    // Verify Twilio signature (basic check for Phase 1)
+    // Get the signature header - required for all requests
     const signature = request.headers.get('X-Twilio-Signature');
 
-    // Parse form-urlencoded body from Twilio
-    const formData = await request.formData();
+    if (!signature) {
+      console.warn('Missing X-Twilio-Signature header');
+      return new Response('Missing signature', { status: 401 });
+    }
 
-    // Verify signature if present
-    if (signature) {
-      const isValid = verifyTwilioSignature(signature);
-      if (!isValid) {
-        console.warn('Invalid Twilio signature format');
+    // Clone request to read body twice (once for signature, once for parsing)
+    const bodyText = await request.text();
+
+    // Parse form-urlencoded body
+    const formData = new URLSearchParams(bodyText);
+
+    // Convert to params object for signature verification
+    const params: Record<string, string> = {};
+    for (const [key, value] of formData.entries()) {
+      params[key] = value;
+    }
+
+    // Get the full request URL for signature verification
+    const requestUrl = request.url;
+
+    // Verify Twilio signature using HMAC-SHA1
+    try {
+      await verifyTwilioSignature(signature, requestUrl, params, env.TWILIO_AUTH_TOKEN);
+    } catch (err) {
+      if (err instanceof TwilioSignatureError) {
+        console.warn('Twilio signature verification failed');
         return new Response('Invalid signature', { status: 401 });
       }
-    } else {
-      // In production, require signature. For Phase 1, log warning but continue
-      console.warn('Missing X-Twilio-Signature header');
+      throw err;
     }
 
     const incomingSMS: TwilioIncomingSMS = {
-      From: formData.get('From')?.toString() ?? '',
-      To: formData.get('To')?.toString() ?? '',
-      Body: formData.get('Body')?.toString() ?? '',
-      MessageSid: formData.get('MessageSid')?.toString() ?? '',
+      From: params['From'] ?? '',
+      To: params['To'] ?? '',
+      Body: params['Body'] ?? '',
+      MessageSid: params['MessageSid'] ?? '',
     };
 
     // Validate required fields

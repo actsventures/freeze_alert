@@ -100,9 +100,10 @@ export async function verifyStripeSignature(
   secret: string
 ): Promise<unknown> {
   // Parse the signature header
+  // Stripe format: "t=1234567890,v1=abcdef..." (may have spaces after commas)
   const elements = signature.split(',').reduce((acc, part) => {
     const [key, value] = part.split('=');
-    if (key && value) acc[key] = value;
+    if (key && value) acc[key.trim()] = value.trim();
     return acc;
   }, {} as Record<string, string>);
 
@@ -139,16 +140,20 @@ export async function verifyStripeSignature(
 
   const computedSig = Array.from(new Uint8Array(signatureBuffer))
     .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
+    .join('')
+    .toLowerCase();
+
+  // Normalize expected signature to lowercase for case-insensitive comparison
+  const normalizedExpectedSig = expectedSig.toLowerCase();
 
   // Constant-time comparison
-  if (computedSig.length !== expectedSig.length) {
-    throw new PaymentError('Stripe signature verification failed');
-  }
+  // Include length difference in mismatch to prevent timing attacks
+  let mismatch = computedSig.length ^ normalizedExpectedSig.length;
 
-  let mismatch = 0;
-  for (let i = 0; i < computedSig.length; i++) {
-    mismatch |= computedSig.charCodeAt(i) ^ expectedSig.charCodeAt(i);
+  // Compare characters up to the minimum length
+  const minLength = Math.min(computedSig.length, normalizedExpectedSig.length);
+  for (let i = 0; i < minLength; i++) {
+    mismatch |= computedSig.charCodeAt(i) ^ normalizedExpectedSig.charCodeAt(i);
   }
 
   if (mismatch !== 0) {

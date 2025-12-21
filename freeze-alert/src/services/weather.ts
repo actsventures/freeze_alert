@@ -124,6 +124,11 @@ export async function fetchNWSForecast(zipCode: string): Promise<NWSForecast> {
     throw new WeatherError('Could not find overnight forecast period');
   }
 
+  // Validate temperature is present and not null
+  if (overnightPeriod.temperature === null || overnightPeriod.temperature === undefined) {
+    throw new WeatherError('Temperature data missing from forecast period');
+  }
+
   // NWS (US National Weather Service) always returns Fahrenheit
   // Round to avoid decimal precision issues in alerts
   const tempF = Math.round(overnightPeriod.temperature);
