@@ -10,4 +10,3 @@ STRIPE_PRICE_ID=price_xxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Alert email for failure notifications
 ALERT_EMAIL=alerts@example.com
-

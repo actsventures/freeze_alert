@@ -6,6 +6,7 @@ node_modules/
 .dev.vars
 .dev.vars.*
 *.dev.vars
+!.dev.vars.example
 
 # Secrets and environment files
 .env
@@ -56,4 +57,3 @@ coverage/
 
 # TypeScript
 *.tsbuildinfo
-
