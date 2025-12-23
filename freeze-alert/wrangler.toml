@@ -6,7 +6,7 @@ compatibility_date = "2024-12-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "freeze-alert-db"
-database_id = "YOUR_D1_DATABASE_ID"  # Replace after running: wrangler d1 create freeze-alert-db
+database_id = "06df8ec8-0d2e-4b0e-a32c-e8c4d255df0e"  # Replace after running: wrangler d1 create freeze-alert-db
 
 # Cron trigger - runs every hour to check for 8pm timezones
 [triggers]
