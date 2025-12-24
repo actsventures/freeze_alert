@@ -56,6 +56,8 @@ export async function createCheckoutSession(
       'subscription_data[metadata][phone]': phone,
       'subscription_data[metadata][zip_code]': zipCode,
       'subscription_data[metadata][timezone]': timezone,
+      // Enable promo codes in checkout
+      'allow_promotion_codes': 'true',
       // No success/cancel URLs since this is SMS-based
       // User will receive confirmation via SMS
       'success_url': 'https://freeze-alert.com/success',

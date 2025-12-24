@@ -17,7 +17,8 @@ FOUND_SECRET=false
 
 for pattern in "${PATTERNS[@]}"; do
   # Check staged files only
-  if git diff --cached --name-only | xargs grep -E "$pattern" 2>/dev/null; then
+  # Use -r flag to prevent xargs from running grep when no files are staged
+  if git diff --cached --name-only | xargs -r grep -E "$pattern" 2>/dev/null; then
     echo "⚠️  WARNING: Potential secret detected matching pattern: $pattern"
     FOUND_SECRET=true
   fi
