@@ -14,6 +14,7 @@ export interface Env {
   STRIPE_SECRET_KEY: string;
   STRIPE_WEBHOOK_SECRET: string;
   STRIPE_PRICE_ID: string;
+  STRIPE_PROMO_CODE?: string;  // Optional: Auto-apply promo code (e.g., promo_1ShiZKKFH1n1oVyf)
 
   // Alert notifications
   ALERT_EMAIL: string;

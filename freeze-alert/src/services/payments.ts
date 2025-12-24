@@ -38,33 +38,41 @@ export async function createCheckoutSession(
   timezone: string,
   env: Env
 ): Promise<string> {
+  // Build the request parameters
+  const params: Record<string, string> = {
+    'mode': 'subscription',
+    'line_items[0][price]': env.STRIPE_PRICE_ID,
+    'line_items[0][quantity]': '1',
+    // Store phone, zip, and timezone in metadata for webhook processing
+    'metadata[phone]': phone,
+    'metadata[zip_code]': zipCode,
+    'metadata[timezone]': timezone,
+    // Subscription metadata (propagates to the subscription object)
+    'subscription_data[metadata][phone]': phone,
+    'subscription_data[metadata][zip_code]': zipCode,
+    'subscription_data[metadata][timezone]': timezone,
+    // No success/cancel URLs since this is SMS-based
+    // User will receive confirmation via SMS
+    'success_url': 'https://freeze-alert.com/success',
+    'cancel_url': 'https://freeze-alert.com/cancelled',
+    // Session expires in 24 hours
+    'expires_at': String(Math.floor(Date.now() / 1000) + 86400),
+  };
+
+  // If a promo code is set, auto-apply it; otherwise allow manual entry
+  if (env.STRIPE_PROMO_CODE) {
+    params['discounts[0][promotion_code]'] = env.STRIPE_PROMO_CODE;
+  } else {
+    params['allow_promotion_codes'] = 'true';
+  }
+
   const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${env.STRIPE_SECRET_KEY}`,
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: new URLSearchParams({
-      'mode': 'subscription',
-      'line_items[0][price]': env.STRIPE_PRICE_ID,
-      'line_items[0][quantity]': '1',
-      // Store phone, zip, and timezone in metadata for webhook processing
-      'metadata[phone]': phone,
-      'metadata[zip_code]': zipCode,
-      'metadata[timezone]': timezone,
-      // Subscription metadata (propagates to the subscription object)
-      'subscription_data[metadata][phone]': phone,
-      'subscription_data[metadata][zip_code]': zipCode,
-      'subscription_data[metadata][timezone]': timezone,
-      // Enable promo codes in checkout
-      'allow_promotion_codes': 'true',
-      // No success/cancel URLs since this is SMS-based
-      // User will receive confirmation via SMS
-      'success_url': 'https://freeze-alert.com/success',
-      'cancel_url': 'https://freeze-alert.com/cancelled',
-      // Session expires in 24 hours
-      'expires_at': String(Math.floor(Date.now() / 1000) + 86400),
-    }),
+    body: new URLSearchParams(params),
   });
 
   if (!response.ok) {

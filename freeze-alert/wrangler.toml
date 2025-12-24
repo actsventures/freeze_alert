@@ -19,5 +19,6 @@ crons = ["0 * * * *"]
 # STRIPE_SECRET_KEY
 # STRIPE_WEBHOOK_SECRET
 # STRIPE_PRICE_ID
+# STRIPE_PROMO_CODE (optional: auto-apply promo code, e.g., promo_1ShiZKKFH1n1oVyf)
 # ALERT_EMAIL
 
