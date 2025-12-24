@@ -108,8 +108,13 @@ describe('NWS Integration Tests', () => {
         selectedPeriod = forecastData.properties.periods.find(p => !p.isDaytime);
       }
 
+      // Validate that a period was found (matching production code error handling)
+      if (!selectedPeriod) {
+        throw new Error(`Could not find overnight forecast period for zip ${zip}`);
+      }
+
       // Step 5: Calculate result
-      const overnightLow = Math.round(selectedPeriod!.temperature);
+      const overnightLow = Math.round(selectedPeriod.temperature);
       const wouldTriggerAlert = overnightLow <= FREEZE_THRESHOLD;
 
       results.push({
