@@ -107,6 +107,11 @@ async function handleCheckoutCompleted(
   const subscription = await subscriptionResponse.json() as StripeSubscription;
   console.log('   Current period end:', subscription.current_period_end);
 
+  // Handle case where current_period_end might be null (e.g., trial subscriptions)
+  // Default to 1 year from now if not available
+  const currentPeriodEnd = subscription.current_period_end ?? Math.floor(Date.now() / 1000) + 365 * 24 * 60 * 60;
+  console.log('   Using period end:', currentPeriodEnd);
+
   // Create subscription record in D1
   console.log('Creating subscription in D1...');
   try {
@@ -116,7 +121,7 @@ async function handleCheckoutCompleted(
       timezone,
       session.customer,
       session.subscription,
-      subscription.current_period_end,
+      currentPeriodEnd,
       env
     );
     console.log('✓ Subscription created in D1');
