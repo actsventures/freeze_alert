@@ -58,19 +58,33 @@ async function handleCheckoutCompleted(
   session: StripeCheckoutSession,
   env: Env
 ): Promise<void> {
+  console.log('=== CHECKOUT COMPLETED HANDLER START ===');
+  console.log('Session ID:', session.id);
+  console.log('Raw metadata:', JSON.stringify(session.metadata, null, 2));
+
   const { phone, zip_code: zipCode, timezone } = session.metadata;
+  console.log('Extracted values:', { phone, zipCode, timezone });
 
   if (!phone || !zipCode || !timezone) {
-    console.error('Missing metadata in checkout session:', session.id);
+    console.error('❌ Missing metadata in checkout session:', session.id);
+    console.error('   phone:', phone);
+    console.error('   zipCode:', zipCode);
+    console.error('   timezone:', timezone);
     return;
   }
+  console.log('✓ Metadata validated');
 
   if (!session.customer || !session.subscription) {
-    console.error('Missing customer or subscription in checkout session:', session.id);
+    console.error('❌ Missing customer or subscription:', {
+      customer: session.customer,
+      subscription: session.subscription
+    });
     return;
   }
+  console.log('✓ Customer and subscription present');
 
   // Fetch subscription details from Stripe to get current_period_end
+  console.log('Fetching subscription from Stripe...');
   const subscriptionResponse = await fetch(
     `https://api.stripe.com/v1/subscriptions/${session.subscription}`,
     {
@@ -81,13 +95,20 @@ async function handleCheckoutCompleted(
   );
 
   if (!subscriptionResponse.ok) {
-    console.error('Failed to fetch subscription from Stripe:', session.subscription);
+    console.error('❌ Failed to fetch subscription from Stripe');
+    console.error('   Status:', subscriptionResponse.status);
+    console.error('   Subscription ID:', session.subscription);
+    const errorBody = await subscriptionResponse.text().catch(() => '');
+    console.error('   Error:', errorBody);
     return;
   }
+  console.log('✓ Subscription fetched from Stripe');
 
   const subscription = await subscriptionResponse.json() as StripeSubscription;
+  console.log('   Current period end:', subscription.current_period_end);
 
   // Create subscription record in D1
+  console.log('Creating subscription in D1...');
   try {
     await createSubscription(
       phone,
@@ -98,24 +119,38 @@ async function handleCheckoutCompleted(
       subscription.current_period_end,
       env
     );
+    console.log('✓ Subscription created in D1');
   } catch (err) {
+    console.error('❌ Failed to create subscription in D1');
     if (err instanceof DBError) {
-      console.error('Failed to create subscription in D1:', err);
-      // Don't throw - subscription was created in Stripe, we'll retry manually if needed
+      console.error('   DBError:', err.message);
+      console.error('   Stack:', err.stack);
       return;
     }
+    console.error('   Unexpected error:', err);
     throw err;
   }
 
   // Send activation confirmation SMS
+  console.log('Sending activation confirmation SMS...');
+  console.log('   To:', phone);
+  console.log('   Zip:', zipCode);
   try {
     await sendActivationConfirmation(phone, zipCode, env);
+    console.log('✓ Activation SMS sent successfully');
   } catch (err) {
+    console.error('❌ Failed to send activation confirmation SMS');
     if (err instanceof SMSError) {
-      console.error('Failed to send activation confirmation SMS:', err);
-      // Subscription is active, SMS failure is acceptable for Phase 1
+      console.error('   SMSError:', err.message);
+      console.error('   Status code:', err.statusCode);
+      console.error('   Twilio error code:', err.twilioErrorCode);
+    } else {
+      console.error('   Unexpected error:', err);
     }
+    // Subscription is active, SMS failure is acceptable for Phase 1
   }
+
+  console.log('=== CHECKOUT COMPLETED HANDLER END ===');
 }
 
 /**

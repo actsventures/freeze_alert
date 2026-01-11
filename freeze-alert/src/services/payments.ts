@@ -51,10 +51,10 @@ export async function createCheckoutSession(
     'subscription_data[metadata][phone]': phone,
     'subscription_data[metadata][zip_code]': zipCode,
     'subscription_data[metadata][timezone]': timezone,
-    // No success/cancel URLs since this is SMS-based
-    // User will receive confirmation via SMS
-    'success_url': 'https://freeze-alert.com/success',
-    'cancel_url': 'https://freeze-alert.com/cancelled',
+    // Success/cancel URLs - use worker health endpoint since we don't have a website yet
+    // The webhook handles activation, not the redirect
+    'success_url': 'https://freeze-alert.actscapital.workers.dev/health?success=true',
+    'cancel_url': 'https://freeze-alert.actscapital.workers.dev/health?canceled=true',
     // Session expires in 24 hours
     'expires_at': String(Math.floor(Date.now() / 1000) + 86400),
   };
