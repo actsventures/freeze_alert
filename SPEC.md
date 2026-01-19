@@ -104,7 +104,43 @@ System texts: "✓ Freeze Alert active for 78701!
 | SMS            | Twilio             | Reliable, handles STOP automatically |
 | Payments       | Stripe             | Subscriptions, webhooks              |
 | Weather        | NWS API (NOAA)     | Free, no API key                     |
-| Zip → Timezone | Static JSON        | Bundled in Worker (~150KB)           |
+| Zip → Timezone | Static JSON        | Bundled in Worker (~500KB-1MB), all continental US zips |
+
+### Zip Code Database (All Phases)
+
+**Requirement:** Accept ALL valid zip codes in the continental United States (~41,000 zip codes).
+
+**Data Source Options:**
+
+1. **US Census ZCTA (ZIP Code Tabulation Areas)** - Free, public domain
+   - Download from: https://www.census.gov/geographies/reference-files/time-series/geo/gazetteer-files.html
+   - Contains: ZIP code, latitude, longitude, timezone (derived)
+
+2. **GeoNames** - Free, Creative Commons license
+   - Download from: http://download.geonames.org/export/zip/
+   - File: `US.zip` contains all US postal codes with coordinates
+
+**Format:**
+```json
+{
+  "78701": "America/Chicago",
+  "10001": "America/New_York",
+  "90210": "America/Los_Angeles",
+  // ... ~41,000 entries
+}
+```
+
+**Validation Logic:**
+- User submits zip code (5 digits)
+- Lookup zip in static JSON
+- If found → proceed with signup
+- If NOT found → reply with error: "Sorry, we couldn't find that zip code. Please check and try again, or text HELP for assistance."
+
+**Notes:**
+- No partial matches or fuzzy searching - exact 5-digit match only
+- Continental US only (excludes Alaska, Hawaii, US territories)
+- File should be generated during build process and bundled with Worker
+- Estimated bundle size: 500KB-1MB (acceptable for Cloudflare Workers 10MB limit)
 
 ### Data Model (Phase 1)
 
@@ -626,15 +662,17 @@ DELETE FROM rate_limits WHERE window_start < strftime('%s', 'now') - 86400;
 
 ## Decision Log
 
-| Decision           | Chosen     | Alternatives          | Rationale                     |
-| ------------------ | ---------- | --------------------- | ----------------------------- |
-| Runtime            | CF Workers | Vercel Edge, Deno     | Best free tier, native cron   |
-| Database           | CF D1      | Turso, PlanetScale    | Co-located, free, simple      |
-| SMS Provider       | Twilio     | Telnyx, Bandwidth     | STOP handling, reliability    |
-| Payments           | Stripe     | Lemon Squeezy         | Industry standard, webhooks   |
-| Weather (primary)  | NWS        | OpenWeather, Tomorrow | Free, no key, US coverage     |
-| Weather (fallback) | Open-Meteo | WeatherAPI            | Free, global, different infra |
-| Queue (Phase 3)    | CF Queues  | None, SQS             | Native integration, cheap     |
+| Decision           | Chosen               | Alternatives               | Rationale                                      |
+| ------------------ | -------------------- | -------------------------- | ---------------------------------------------- |
+| Runtime            | CF Workers           | Vercel Edge, Deno          | Best free tier, native cron                    |
+| Database           | CF D1                | Turso, PlanetScale         | Co-located, free, simple                       |
+| SMS Provider       | Twilio               | Telnyx, Bandwidth          | STOP handling, reliability                     |
+| Payments           | Stripe               | Lemon Squeezy              | Industry standard, webhooks                    |
+| Weather (primary)  | NWS                  | OpenWeather, Tomorrow      | Free, no key, US coverage                      |
+| Weather (fallback) | Open-Meteo           | WeatherAPI                 | Free, global, different infra                  |
+| Queue (Phase 3)    | CF Queues            | None, SQS                  | Native integration, cheap                      |
+| Zip Data           | Static JSON (all US) | API lookup, partial subset | Comprehensive, free, no external dependencies  |
+| Zip Source         | GeoNames/US Census   | Commercial APIs            | Free, public domain, complete US coverage      |
 
 ---
 
