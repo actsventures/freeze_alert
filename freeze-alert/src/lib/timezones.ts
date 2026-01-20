@@ -27,19 +27,16 @@ export type USTimezone = typeof US_TIMEZONES[number];
 
 /**
  * Zip code data structure from JSON
+ * Optimized format: [timezone, lat, lon]
  */
-interface ZipData {
-  tz: USTimezone;
-  lat: number;
-  lon: number;
-}
+type ZipData = [USTimezone, number, number];
 
 /**
  * Zip code to timezone/coordinates mapping
- * Filter out metadata keys (_comment, _format, _coverage)
+ * Filter out metadata keys (_comment, _format, _source, _generated, _total_zips)
  */
 const ZIP_DATA = Object.fromEntries(
-  Object.entries(zipData as Record<string, ZipData | string>).filter(
+  Object.entries(zipData as Record<string, ZipData | string | number>).filter(
     ([key]) => !key.startsWith('_')
   )
 ) as Record<string, ZipData>;
@@ -58,7 +55,8 @@ export function getTimezoneForZip(zipCode: string): USTimezone {
     throw new TimezoneError(`Unknown zip code: ${zipCode}`);
   }
 
-  return data.tz;
+  // Optimized format: [timezone, lat, lon]
+  return data[0];
 }
 
 /**
@@ -75,7 +73,8 @@ export function getCoordinatesForZip(zipCode: string): { lat: number; lon: numbe
     throw new TimezoneError(`Unknown zip code: ${zipCode}`);
   }
 
-  return { lat: data.lat, lon: data.lon };
+  // Optimized format: [timezone, lat, lon]
+  return { lat: data[1], lon: data[2] };
 }
 
 /**
