@@ -25,9 +25,10 @@ for pattern in "${PATTERNS[@]}"; do
 done
 
 # Check for .dev.vars or other sensitive files
-if git diff --cached --name-only | grep -E "\.(dev\.vars|env|secret|key)$"; then
+# Pattern matches: .dev.vars, .dev.vars.local, .env, .env.production, *.secret, *.key, *.pem
+if git diff --cached --name-only | grep -E "\.(dev\.vars|env|secret|key|pem)($|\.)"; then
   echo "❌ ERROR: Attempting to commit sensitive file!"
-  echo "Files like .dev.vars, .env, *.secret, *.key should never be committed."
+  echo "Files like .dev.vars, .env, .env.*, *.secret, *.key, *.pem should never be committed."
   exit 1
 fi
 
