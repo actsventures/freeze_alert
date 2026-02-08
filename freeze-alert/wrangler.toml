@@ -1,0 +1,24 @@
+name = "freeze-alert"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+
+# D1 Database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "freeze-alert-db"
+database_id = "06df8ec8-0d2e-4b0e-a32c-e8c4d255df0e"  # Replace after running: wrangler d1 create freeze-alert-db
+
+# Cron trigger - runs every hour to check for 8pm timezones
+[triggers]
+crons = ["0 * * * *"]
+
+# Environment variables (secrets set via wrangler secret put)
+# TWILIO_ACCOUNT_SID
+# TWILIO_AUTH_TOKEN
+# TWILIO_PHONE_NUMBER
+# STRIPE_SECRET_KEY
+# STRIPE_WEBHOOK_SECRET
+# STRIPE_PRICE_ID
+# STRIPE_PROMO_CODE (optional: auto-apply promo code, e.g., promo_1ShiZKKFH1n1oVyf)
+# ALERT_EMAIL
+
