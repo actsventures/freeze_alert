@@ -1,0 +1,12 @@
+# Ensure line endings are consistent
+* text=auto eol=lf
+*.sh text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+
